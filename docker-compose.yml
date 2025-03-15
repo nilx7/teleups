@@ -1,0 +1,16 @@
+name: teleups
+
+services:
+  teleups:
+    image: teleups:latest
+    container_name: teleups
+    restart: always
+    build:
+      dockerfile: Dockerfile
+      context: .
+    env_file:
+      - .env
+    network_mode: host
+    # volume mapping for development
+    # volumes:
+    #   - .:/app
