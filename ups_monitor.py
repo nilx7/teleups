@@ -1,13 +1,14 @@
 import time
 import logging
 from typing import Optional
+from wakeonlan import send_magic_packet
 
 class UPSMonitor:
     """
     A class to monitor UPS status and send notifications for power outages and restorations.
     """
 
-    def __init__(self, nut_client, telegram_notifier, logger: Optional[logging.Logger] = None):
+    def __init__(self, nut_client, telegram_notifier, wol_mac_list = None, logger: Optional[logging.Logger] = None):
         """
         Initializes the UPSMonitor.
 
@@ -20,6 +21,7 @@ class UPSMonitor:
         self.last_ups_on_battery_status = False
         self.last_ups_low_battery_status = False
         self.telegram_notifier = telegram_notifier
+        self.wol_mac_list = wol_mac_list
         self.logger = logger or logging.getLogger(__name__)
         self.handle_logging(logging.INFO, "Monitor started")
 
@@ -73,6 +75,20 @@ class UPSMonitor:
         """
         self.handle_logging(logging.INFO, "UPS status changed (Power Restoration)")
         self.send_ups_status_notification(title="Power restoration!")
+        self.send_wol_magic_packet()
+
+    def send_wol_magic_packet(self) -> None:
+        """
+        Sends a Wake-on-LAN (WOL) magic packet to the MAC addresses stored in `self.wol_mac_list`.
+
+        This function checks if `self.wol_mac_list` is populated. If it is empty or None, 
+        the function exits without performing any action. Otherwise, it sends a magic packet 
+        using the `send_magic_packet` function.
+        """
+        if not self.wol_mac_list:
+            return
+        send_magic_packet(*self.wol_mac_list)
+        self.handle_logging(logging.INFO, f"WOL magic packet sent to: {self.wol_mac_list}")
 
     def monitor_ups(self) -> None:
         """
@@ -90,7 +106,7 @@ class UPSMonitor:
                     self.handle_power_restoration()
 
                 self.last_ups_on_battery_status = current_ups_on_battery_status
-                time.sleep(2)  # Wait for 2 seconds before checking again
+                time.sleep(30)  # Wait for 30 seconds before checking again
 
         except KeyboardInterrupt:
             self.handle_logging(logging.INFO, "Script terminated by user.")
