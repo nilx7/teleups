@@ -1,6 +1,7 @@
 import requests
 import logging
 from typing import Optional
+from logger_setup import handle_logging
 
 class TelegramNotifier:
     """
@@ -19,19 +20,6 @@ class TelegramNotifier:
         self.token_id = token_id
         self.chat_id = chat_id
         self.logger = logger or logging.getLogger(__name__)
-
-    def handle_logging(self, level: int, message: str) -> None:
-        """
-        Handles logging or printing messages based on the availability of a logger.
-
-        Args:
-            level (int): The log level for the message.
-            message (str): The message to log or print.
-        """
-        if self.logger:
-            self.logger.log(level, message)
-        else:
-            print(message)
 
     def send_notification(self, msg_title: str, msg: str) -> None:
         """
@@ -52,6 +40,6 @@ class TelegramNotifier:
         try:
             response = requests.post(url, data=payload)
             response.raise_for_status()
-            self.handle_logging(logging.INFO, "Telegram notification has been sent successfully")
+            handle_logging(logging.INFO, "Telegram notification has been sent successfully", self.logger)
         except requests.exceptions.RequestException as e:
-            self.handle_logging(logging.ERROR, f"Failed to send Telegram notification: {e}")
+            handle_logging(logging.ERROR, f"Failed to send Telegram notification: {e}", self.logger)

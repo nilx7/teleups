@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-from nut import NUTClient
+from utils.nut import NUTClient
 from logger_setup import setup_logger
-from telegram_notifier import TelegramNotifier
+from utils.telegram_notifier import TelegramNotifier
 from ups_monitor import UPSMonitor
 from dotenv import load_dotenv
 import os
