@@ -16,7 +16,9 @@ def setup_logger():
     return logger
 
 
-def handle_logging(level: int, message: str, logger: Optional[logging.Logger] = None) -> None:
+def handle_logging(
+    level: int, message: str, logger: Optional[logging.Logger] = None
+) -> None:
     """
     Handles logging or printing messages based on the availability of a logger.
 

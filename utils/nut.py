@@ -13,7 +13,9 @@ class NUTClient:
         - ups_login_pass (str): Password for logging into the NUT server.
         """
         self.ups_name = ups_name
-        self.client = PyNUTClient(host=ups_host, login=ups_login_user, password=ups_login_pass)
+        self.client = PyNUTClient(
+            host=ups_host, login=ups_login_user, password=ups_login_pass
+        )
 
     @staticmethod
     def __decode_byte_dict(byte_dict: dict) -> dict:
@@ -26,7 +28,10 @@ class NUTClient:
         Returns:
         - dict: Dictionary with decoded keys and values as strings.
         """
-        return {key.decode('utf-8'): value.decode('utf-8') for key, value in byte_dict.items()}
+        return {
+            key.decode("utf-8"): value.decode("utf-8")
+            for key, value in byte_dict.items()
+        }
 
     def __handle_operation(self, operation, *args, **kwargs):
         """
@@ -89,16 +94,16 @@ class NUTClient:
         """
         Retrieves the current power being drawn from the UPS in watts.
 
-        This method accesses the UPS variables using the `get_ups_vars` method and retrieves the 
-        value of the 'ups.realpower' key, which represents the current power draw in watts. If the 
-        'ups.realpower' key is not present in the dictionary, it defaults to '0'. The value is then 
+        This method accesses the UPS variables using the `get_ups_vars` method and retrieves the
+        value of the 'ups.realpower' key, which represents the current power draw in watts. If the
+        'ups.realpower' key is not present in the dictionary, it defaults to '0'. The value is then
         converted to an integer and returned.
 
         Returns:
             int: The current power draw from the UPS in watts. Returns 0 if the value is not available.
         """
         ups_vars = self.get_ups_vars()
-        return int(ups_vars.get('ups.realpower', '0'))
+        return int(ups_vars.get("ups.realpower", "0"))
 
     def get_battery_charge_percentage(self) -> int:
         """
@@ -108,7 +113,7 @@ class NUTClient:
         - int: Current battery charge percentage.
         """
         ups_vars = self.get_ups_vars()
-        return int(ups_vars.get('battery.charge', 0)) if ups_vars else 0
+        return int(ups_vars.get("battery.charge", 0)) if ups_vars else 0
 
     def get_battery_charge_low_percentage(self) -> int:
         """
@@ -123,7 +128,7 @@ class NUTClient:
                 if an error occurs.
         """
         ups_rwvars = self.get_ups_read_write_vars()
-        return int(ups_rwvars.get('battery.charge.low', 0)) if ups_rwvars else 0
+        return int(ups_rwvars.get("battery.charge.low", 0)) if ups_rwvars else 0
 
     def is_ups_on_battery(self) -> bool:
         """
@@ -133,7 +138,7 @@ class NUTClient:
         - bool: True if the UPS is on battery power ('OB' status), False otherwise.
         """
         ups_vars = self.get_ups_vars()
-        return 'OB' in ups_vars.get('ups.status') if ups_vars else False
+        return "OB" in ups_vars.get("ups.status") if ups_vars else False
 
     def is_ups_battery_low(self, ignore_ob: bool = False) -> bool:
         """
@@ -154,7 +159,10 @@ class NUTClient:
         """
         if not self.is_ups_on_battery() and not ignore_ob:
             return False
-        return self.get_battery_charge_percentage() <= self.get_battery_charge_low_percentage()
+        return (
+            self.get_battery_charge_percentage()
+            <= self.get_battery_charge_low_percentage()
+        )
 
     def get_ups_status(self) -> str:
         """
@@ -174,27 +182,31 @@ class NUTClient:
                 - 'BOOST': SmartBoost (UPS is boosting the voltage)
         """
         status_map = {
-            'OL': 'On Line',
-            'OB': 'On Battery',
-            'LB': 'Low Battery',
-            'CHRG': 'Charging',
-            'DISCHRG': 'Discharging',
-            'BYPS': 'Bypass',
-            'OFF': 'Offline',
-            'TRIM': 'SmartTrim',
-            'BOOST': 'SmartBoost',
+            "OL": "On Line",
+            "OB": "On Battery",
+            "LB": "Low Battery",
+            "CHRG": "Charging",
+            "DISCHRG": "Discharging",
+            "BYPS": "Bypass",
+            "OFF": "Offline",
+            "TRIM": "SmartTrim",
+            "BOOST": "SmartBoost",
         }
 
         ups_vars = self.get_ups_vars()
         if ups_vars:
-            status_codes = ups_vars.get('ups.status', '').split()
-            status_descriptions = [status_map.get(code, 'Unknown status') for code in status_codes]
+            status_codes = ups_vars.get("ups.status", "").split()
+            status_descriptions = [
+                status_map.get(code, "Unknown status") for code in status_codes
+            ]
 
             # Filter out 'Unknown status' if at least one known status is detected
-            known_statuses = [desc for desc in status_descriptions if desc != 'Unknown status']
+            known_statuses = [
+                desc for desc in status_descriptions if desc != "Unknown status"
+            ]
             if known_statuses:
-                return ', '.join(known_statuses)
+                return ", ".join(known_statuses)
             else:
-                return 'Unknown status'
+                return "Unknown status"
         else:
-            return 'Unknown status'
+            return "Unknown status"

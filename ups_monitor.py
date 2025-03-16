@@ -4,12 +4,19 @@ from typing import Optional
 from utils.wol import WakeOnLAN
 from logger_setup import handle_logging
 
+
 class UPSMonitor:
     """
     A class to monitor UPS status and send notifications for power outages and restorations.
     """
 
-    def __init__(self, nut_client, telegram_notifier, wol_mac_list = None, logger: Optional[logging.Logger] = None):
+    def __init__(
+        self,
+        nut_client,
+        telegram_notifier,
+        wol_mac_list=None,
+        logger: Optional[logging.Logger] = None,
+    ):
         """
         Initializes the UPSMonitor.
 
@@ -53,7 +60,9 @@ class UPSMonitor:
         current_ups_low_battery_status = self.nut_client.is_ups_battery_low()
 
         if current_ups_low_battery_status and not self.last_ups_low_battery_status:
-            handle_logging(logging.INFO, f"Low battery status {current_battery_perc}%", self.logger)
+            handle_logging(
+                logging.INFO, f"Low battery status {current_battery_perc}%", self.logger
+            )
             self.send_ups_status_notification(title="Low battery!")
 
         self.last_ups_low_battery_status = current_ups_low_battery_status
@@ -62,7 +71,9 @@ class UPSMonitor:
         """
         Handles the UPS power restoration scenario.
         """
-        handle_logging(logging.INFO, "UPS status changed (Power Restoration)", self.logger)
+        handle_logging(
+            logging.INFO, "UPS status changed (Power Restoration)", self.logger
+        )
         self.send_ups_status_notification(title="Power restoration!")
 
         self.send_wol_magic_packet()
@@ -72,7 +83,11 @@ class UPSMonitor:
             return
 
         self.wol.send_wol_magic_packet()
-        handle_logging(logging.INFO, f"WOL magic packet successfully sent to: {self.wol_mac_list}", self.logger)
+        handle_logging(
+            logging.INFO,
+            f"WOL magic packet successfully sent to: {self.wol_mac_list}",
+            self.logger,
+        )
 
     def monitor_ups(self) -> None:
         """
@@ -86,10 +101,16 @@ class UPSMonitor:
                 current_ups_on_battery_status = self.nut_client.is_ups_on_battery()
 
                 # Power outage
-                if not self.last_ups_on_battery_status and current_ups_on_battery_status:
+                if (
+                    not self.last_ups_on_battery_status
+                    and current_ups_on_battery_status
+                ):
                     self.handle_power_outage()
                 # Power restoration
-                elif self.last_ups_on_battery_status and not current_ups_on_battery_status:
+                elif (
+                    self.last_ups_on_battery_status
+                    and not current_ups_on_battery_status
+                ):
                     self.handle_power_restoration()
 
                 self.last_ups_on_battery_status = current_ups_on_battery_status
