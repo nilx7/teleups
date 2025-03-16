@@ -1,5 +1,6 @@
 import time
 import logging
+import schedule
 from typing import Optional
 from utils.wol import WakeOnLAN
 from logger_setup import handle_logging
@@ -15,6 +16,7 @@ class UPSMonitor:
         nut_client,
         telegram_notifier,
         wol_mac_list=None,
+        auto_wake_interval: int = 0,
         logger: Optional[logging.Logger] = None,
     ):
         """
@@ -23,6 +25,8 @@ class UPSMonitor:
         Args:
             nut_client: An instance of a NUT client to interact with the UPS.
             telegram_notifier: An instance of TelegramNotifier to send notifications.
+            wol_make_list: A list of MAC addresses for devices to be awakened using Wake-on-LAN (WOL).
+            auto_wake_interval (int): The time interval (in minutes) for periodically waking devices using Wake-on-LAN (WOL).
             logger (Optional[logging.Logger]): A logger instance for logging messages. Defaults to None.
         """
         self.nut_client = nut_client
@@ -31,6 +35,7 @@ class UPSMonitor:
         self.telegram_notifier = telegram_notifier
         self.wol_mac_list = wol_mac_list
         self.wol = WakeOnLAN(wol_mac_list) if wol_mac_list else None
+        self.auto_wake_interval = auto_wake_interval
         self.logger = logger or logging.getLogger(__name__)
         handle_logging(logging.INFO, "Monitor started", self.logger)
 
@@ -89,32 +94,34 @@ class UPSMonitor:
             self.logger,
         )
 
+    def check_ups_status(self) -> None:
+        """
+        Monitors the UPS status and handles power outage/restoration events.
+        """
+        current_ups_on_battery_status = self.nut_client.is_ups_on_battery()
+
+        # Power outage
+        if not self.last_ups_on_battery_status and current_ups_on_battery_status:
+            self.handle_power_outage()
+        # Power restoration
+        elif self.last_ups_on_battery_status and not current_ups_on_battery_status:
+            self.handle_power_restoration()
+
+        self.last_ups_on_battery_status = current_ups_on_battery_status
+
     def monitor_ups(self) -> None:
         """
-        Monitors the UPS status in a loop and handles power outage/restoration events.
+        Schedules a routine check
         """
         try:
-            # Send a WOL magic packet on the initial startup to maintain consistency
-            self.send_wol_magic_packet()
+            schedule.every(10).seconds.do(self.check_ups_status)
+            if self.auto_wake_interval > 0:
+                schedule.every(self.auto_wake_interval).minutes.do(
+                    self.send_wol_magic_packet
+                )
 
             while True:
-                current_ups_on_battery_status = self.nut_client.is_ups_on_battery()
-
-                # Power outage
-                if (
-                    not self.last_ups_on_battery_status
-                    and current_ups_on_battery_status
-                ):
-                    self.handle_power_outage()
-                # Power restoration
-                elif (
-                    self.last_ups_on_battery_status
-                    and not current_ups_on_battery_status
-                ):
-                    self.handle_power_restoration()
-
-                self.last_ups_on_battery_status = current_ups_on_battery_status
-                time.sleep(15)  # Wait for 15 seconds before checking again
-
+                schedule.run_pending()
+                time.sleep(1)
         except KeyboardInterrupt:
             handle_logging(logging.INFO, "Script terminated by user", self.logger)

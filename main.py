@@ -20,6 +20,11 @@ NUT_CLIENT_PASSWORD = os.getenv("NUT_CLIENT_PASSWORD")
 WOL_MAC_LIST = [
     item.strip() for item in os.getenv("WOL_MAC_LIST", "").split(",") if item.strip()
 ]
+AUTO_WAKE_INTERVAL = (
+    int(os.getenv("AUTO_WAKE_INTERVAL"))
+    if str(os.getenv("AUTO_WAKE_INTERVAL")).isdigit()
+    else 0
+)
 
 
 def main():
@@ -30,7 +35,9 @@ def main():
     nut_client = NUTClient(
         NUT_CLIENT_NAME, NUT_CLIENT_HOST, NUT_CLIENT_USER, NUT_CLIENT_PASSWORD
     )
-    ups_monitor = UPSMonitor(nut_client, telegram_notifier, WOL_MAC_LIST, logger)
+    ups_monitor = UPSMonitor(
+        nut_client, telegram_notifier, WOL_MAC_LIST, AUTO_WAKE_INTERVAL, logger
+    )
     ups_monitor.monitor_ups()
 
 
