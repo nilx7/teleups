@@ -88,13 +88,16 @@ class UPSMonitor:
         if not self.wol_mac_list:
             return
         send_magic_packet(*self.wol_mac_list)
-        self.handle_logging(logging.INFO, f"WOL magic packet sent to: {self.wol_mac_list}")
+        self.handle_logging(logging.INFO, f"WOL magic packet successfully sent to: {self.wol_mac_list}")
 
     def monitor_ups(self) -> None:
         """
         Monitors the UPS status in a loop and handles power outage/restoration events.
         """
         try:
+            # Send a WOL magic packet on the initial startup to maintain consistency
+            self.send_wol_magic_packet()
+
             while True:
                 current_ups_on_battery_status = self.nut_client.is_ups_on_battery()
 
@@ -106,7 +109,7 @@ class UPSMonitor:
                     self.handle_power_restoration()
 
                 self.last_ups_on_battery_status = current_ups_on_battery_status
-                time.sleep(30)  # Wait for 30 seconds before checking again
+                time.sleep(15)  # Wait for 15 seconds before checking again
 
         except KeyboardInterrupt:
             self.handle_logging(logging.INFO, "Script terminated by user.")
