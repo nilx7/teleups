@@ -25,6 +25,7 @@ def handle_logging(
     Args:
         level (int): The log level for the message.
         message (str): The message to log or print.
+        logger (Optional[logging.Logger]): A logger instance for logging messages. Defaults to None.
     """
     if logger:
         logger.log(level, message)
