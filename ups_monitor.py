@@ -84,7 +84,22 @@ class UPSMonitor:
         self.send_wol_magic_packet()
 
     def send_wol_magic_packet(self) -> None:
-        if not self.wol or self.nut_client.is_ups_battery_low():
+        """
+        Sends a Wake-on-LAN (WOL) magic packet if certain conditions are met.
+
+        This function ensures that the WOL packet is only sent when:
+        - `self.wol` is set (not None or False).
+        - The UPS is not currently running on battery power.
+        - The battery charge level is above the low battery threshold.
+        """
+        if (
+            not self.wol
+            or self.nut_client.is_ups_on_battery()
+            or (
+                self.nut_client.get_battery_charge_percentage()
+                <= self.nut_client.get_battery_charge_low_percentage()
+            )
+        ):
             return
 
         self.wol.send_wol_magic_packet()
