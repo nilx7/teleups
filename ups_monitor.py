@@ -84,7 +84,7 @@ class UPSMonitor:
         self.send_wol_magic_packet()
 
     def send_wol_magic_packet(self) -> None:
-        if not self.wol:
+        if not self.wol or self.nut_client.is_ups_battery_low():
             return
 
         self.wol.send_wol_magic_packet()
