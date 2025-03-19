@@ -1,8 +1,12 @@
 import time
 import logging
+import threading
 import schedule
 from typing import Optional
 from utils.wol import WakeOnLAN
+from utils.nut import NUTClient
+from utils.telegram_notifier import TelegramNotifier
+from utils import common
 from logger_setup import handle_logging
 
 
@@ -13,8 +17,8 @@ class UPSMonitor:
 
     def __init__(
         self,
-        nut_client,
-        telegram_notifier,
+        nut_client: NUTClient,
+        telegram_notifier: TelegramNotifier,
         wol_mac_list=None,
         auto_wake_interval: int = 0,
         logger: Optional[logging.Logger] = None,
@@ -46,11 +50,7 @@ class UPSMonitor:
         Args:
             title (str): The title of the notification message.
         """
-        title = title + "\n" + "UPS Status Information"
-        msg = f"Battery Percentage: <b>{self.nut_client.get_battery_charge_percentage()}%</b>\n"
-        msg += f"Status: <b>{self.nut_client.get_ups_status()}</b>\n"
-        msg += f"Low Battery: <b>{'Yes' if self.nut_client.is_ups_battery_low(True) else 'No'}</b>\n"
-        msg += f"Power: <b>{self.nut_client.get_current_power_draw()} watt</b>"
+        title, msg = common.get_ups_status_message(self.nut_client, title)
         self.telegram_notifier.send_notification(title, msg)
         handle_logging(logging.INFO, "UPS status notification sent", self.logger)
 
@@ -134,6 +134,12 @@ class UPSMonitor:
                 schedule.every(self.auto_wake_interval).minutes.do(
                     self.send_wol_magic_packet
                 )
+
+            threading.Thread(
+                target=self.telegram_notifier.create_bot_application,
+                args=(self.nut_client,),
+                daemon=True
+            ).start()            
 
             while True:
                 schedule.run_pending()
